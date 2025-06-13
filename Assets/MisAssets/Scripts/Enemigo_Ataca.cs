@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// DESCRIPCION:
@@ -14,9 +16,17 @@ public class Enemigo_Ataca : MonoBehaviour
 
     public enum Estados{ Reposo, AtacaPlayer, Muerto}
     public Estados estado;
+    public GameObject arma;
+
+    public GameObject hud;
+    public Image barraVida;
+    public TextMeshProUGUI barraVidaText;
 
     Animator anim;
-    
+
+    [Header("-------------")]
+    public float vida;
+    public float vidaMax;
     #endregion
     // ***********************************************
     #region 2) Funciones de Unity
@@ -24,12 +34,15 @@ public class Enemigo_Ataca : MonoBehaviour
     {
         raycastScript = GetComponent<RaycastAbanico>();
         anim = GetComponent<Animator>();
+
+        vida = vidaMax;
     }
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        VisibilidadHud(true);
+        ActualizarBarraVida();
     }
 
     // Update is called once per frame
@@ -45,8 +58,16 @@ public class Enemigo_Ataca : MonoBehaviour
             CambioEstado(Estados.Reposo);
         }
     }
+
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.collider.CompareTag("Balas"))
+        {
+            EnemigoRecibeBalazo(50f);
+        }
+    }
     #endregion
-// ***********************************************
+    // ***********************************************
     #region 3) Funciones originales
     public void CambioEstado (Estados nuevoEstado)
     {
@@ -65,8 +86,51 @@ public class Enemigo_Ataca : MonoBehaviour
 
                 break;
             case Estados.Muerto:
+
+                VisibilidadHud(false);
+                anim.SetTrigger("muerto");
                 break;
         }
+    }
+
+    public void EnemigoRecibeBalazo(float _impacto)
+    {
+        if (estado != Estados.Muerto)
+        {
+            vida -= _impacto;
+            ActualizarBarraVida();
+
+            if (vida <= 0f) CambioEstado(Estados.Muerto);
+        }
+    }
+
+    public void ActualizarBarraVida()
+    {
+        float _vidaNormalizada = vida / vidaMax;
+        barraVida.fillAmount = _vidaNormalizada;
+
+        barraVidaText.text = $"{vida}/{vidaMax}";
+    }
+
+    void VisibilidadHud (bool _esVisible)
+    {
+        hud.SetActive(_esVisible);
+    }
+
+    public void DesactivarArma()
+    {
+        //arma.SetActive(false);
+
+        arma.GetComponent<Collider>().isTrigger = false;
+        arma.GetComponent<Rigidbody>().useGravity = true;
+        arma.GetComponent<Rigidbody>().isKinematic = false;
+
+        arma.transform.SetParent(null);
+    }
+
+    public void FinAnimacionMuerte()
+    {
+        Destroy(gameObject);
     }
 
     #endregion
